@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/design_extract)",
+      "Read(//tmp/**)",
+      "Bash(cp /Users/soonyeophong/.claude/projects/-Users-soonyeophong-develop-soonyubing-ownage/60db13f9-9ae0-4b1f-96c2-bb6d3ba1cb13/tool-results/webfetch-1776613926161-zuaugl.bin ./design.gz)",
+      "Bash(gunzip -f design.gz)",
+      "Read(//private/tmp/design_extract/**)",
+      "Bash(tar -tf design)",
+      "Bash(flutter --version)",
+      "Bash(flutter create *)",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter build *)",
+      "Bash(flutter test *)",
+      "Bash(flutter devices *)",
+      "Bash(flutter run *)",
+      "Bash(grep -rn '\\\\\\\\\\\\$' /Users/soonyeophong/develop/soonyubing/ownage/lib/)",
+      "Bash(pkill -f \"flutter run -d chrome\")",
+      "Bash(lsof -ti:8765)",
+      "Bash(xargs kill *)",
+      "Bash(npm -v)",
+      "Bash(mkdir -p /Users/soonyeophong/develop/soonyubing/ownage-backend)",
+      "Read(//Users/soonyeophong/develop/soonyubing/**)",
+      "Bash(npm install *)",
+      "Bash(npx nest *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
