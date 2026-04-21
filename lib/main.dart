@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'state/auth_controller.dart';
 import 'theme/tokens.dart';
 import 'widgets/primitives.dart';
 import 'screens/feed.dart';
@@ -7,6 +8,7 @@ import 'screens/ages.dart';
 import 'screens/me.dart';
 import 'screens/wallet.dart';
 import 'screens/age_profile.dart';
+import 'screens/onboarding/onboarding.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -21,8 +23,27 @@ void main() {
   runApp(const OwnAgeApp());
 }
 
-class OwnAgeApp extends StatelessWidget {
+class OwnAgeApp extends StatefulWidget {
   const OwnAgeApp({super.key});
+  @override
+  State<OwnAgeApp> createState() => _OwnAgeAppState();
+}
+
+class _OwnAgeAppState extends State<OwnAgeApp> {
+  final AuthController _auth = AuthController();
+
+  @override
+  void initState() {
+    super.initState();
+    _auth.bootstrap();
+  }
+
+  @override
+  void dispose() {
+    _auth.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -39,13 +60,61 @@ class OwnAgeApp extends StatelessWidget {
         splashColor: Colors.white.withValues(alpha: 0.04),
         highlightColor: Colors.white.withValues(alpha: 0.02),
       ),
-      home: const RootShell(),
+      home: AuthGate(auth: _auth),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  final AuthController auth;
+  const AuthGate({super.key, required this.auth});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: auth,
+      builder: (context, _) {
+        switch (auth.phase) {
+          case AuthPhase.booting:
+            return const _BootSplash();
+          case AuthPhase.loggedOut:
+            return OnboardingScreen(
+              auth: auth,
+              onComplete: () {
+                // auth.phase flipped to loggedIn already; no-op triggers rebuild
+              },
+            );
+          case AuthPhase.loggedIn:
+            return RootShell(auth: auth);
+        }
+      },
+    );
+  }
+}
+
+class _BootSplash extends StatelessWidget {
+  const _BootSplash();
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: OA.bg0,
+      body: Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation(OA.gold1),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class RootShell extends StatefulWidget {
-  const RootShell({super.key});
+  final AuthController auth;
+  const RootShell({super.key, required this.auth});
   @override
   State<RootShell> createState() => _RootShellState();
 }
@@ -67,7 +136,10 @@ class _RootShellState extends State<RootShell> {
             Column(
               children: [
                 const OAStatusBar(),
-                const OAAppHeader(title: 'OWNAGE'),
+                OAAppHeader(
+                  title: 'OWNAGE',
+                  onBell: () => _confirmLogout(context),
+                ),
                 Expanded(
                   child: IndexedStack(
                     index: _tabIndex(_tab),
@@ -129,6 +201,31 @@ class _RootShellState extends State<RootShell> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: OA.bg1,
+        title: Text('Sign out?', style: OA.body(size: 16, color: OA.fg1)),
+        content: Text(
+          'You can log back in with the same email.',
+          style: OA.body(size: 13, color: OA.fg2),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('SIGN OUT'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await widget.auth.logout();
   }
 
   int _tabIndex(String id) => switch (id) {
